@@ -28,3 +28,8 @@ typeof(bitstream)
 q = 3
 y = q^2 + -6*q + 9
 print(y)
+
+x = 1
+q = (x == 1)
+y = true
+z = !y
