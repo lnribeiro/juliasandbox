@@ -1,13 +1,19 @@
 using Plots
 
 include("modulation.jl")
+include("bits.jl")
 
 modOrder = 16
-numSymbols = 100
-noiseVar = 0.1
+modBits = Int(log2(modOrder))
+numBits = 25600
+numSymbols = Int(numBits/modBits)
+
+SNR_dB = 30 # Eb/N0
+SNR_lin = 10^(SNR_dB/10)
 
 # generate message symbols
-symbols = rand(0:(modOrder-1), numSymbols)
+bits = generateBitstream(numBits)
+symbols = bitstream2symbolstream(bits, modBits)
 
 # modulate symbols
 qammod = QAM(modOrder)
@@ -19,8 +25,11 @@ xpsk = modulate(pskmod, symbols)
 # corrupt modulated symbols
 n = (1/sqrt(2)).*(randn(numSymbols) + im*randn(numSymbols))
 
-yqam = xqam .+ sqrt(noiseVar)*n
-ypsk = xpsk .+ sqrt(noiseVar)*n
+N0_qam = qammod.avgEb/SNR_lin
+N0_psk = pskmod.avgEb/SNR_lin
+
+yqam = xqam .+ sqrt(N0_qam)*n
+ypsk = xpsk .+ sqrt(N0_psk)*n
 
 # demodulate noisy symbols
 demodSymbolsQAM = demodulate(qammod, yqam)
@@ -37,12 +46,14 @@ println("SER [QAM]: $SERQAM")
 println("Number of errors [PSK]: $numErrorsPSK")
 println("SER [PSK]: $SERPSK")
 
-scatter(real(xqam), imag(xqam), label = "Noiseless")
-scatter!(real(yqam), imag(yqam), label = "Noisy QAM")
-xlabel!("In-phase")
-ylabel!("Quadrature")
+p1 = scatter(real(xqam), imag(xqam), label = "Noiseless")
+p1 = scatter!(real(yqam), imag(yqam), label = "Noisy QAM")
+p1 = xlabel!("In-phase")
+p1 = ylabel!("Quadrature")
 
-scatter(real(xpsk), imag(xpsk), label = "Noiseless", reuse=false)
-scatter!(real(ypsk), imag(ypsk), label = "Noisy PSK")
-xlabel!("In-phase")
-ylabel!("Quadrature")
+p2 = scatter(real(xpsk), imag(xpsk), label = "Noiseless")
+p2 = scatter!(real(ypsk), imag(ypsk), label = "Noisy PSK")
+p2 = xlabel!("In-phase")
+p2 = ylabel!("Quadrature")
+
+plot(p1, p2, layout=2)
