@@ -22,7 +22,7 @@ mutable struct PSK <: DigitalModulation
         end
 
         # calculate average symbol and bit energies
-        avgEs = Statistics.mean(abs.(constellation).^2)
+        avgEs = mean(abs.(constellation).^2)
         avgEb = avgEs/modBits
 
         new(modOrder, modBits, constellation, avgEs, avgEb)

@@ -7,7 +7,7 @@ include("utils.jl")
 modOrderVec = [4, 16, 64, 256]
 numBits = 9600
 SNRdBvec = -20:5:30 # Eb/N0
-numRuns = 100
+numRuns = 10
 
 # initialize modulators
 modulators = Vector{QAM}(undef, length(modOrderVec))
@@ -28,8 +28,15 @@ for rr = 1:numRuns
         modOrder = modOrderVec[mm]
         modBits = Int(log2(modOrder))
         numSymbols = Int(numBits/modBits)
+
+        # convert bitstream to symbolstream
         symbols = bitstream2symbolstream(bits, modBits)
-        x = modulate(modulator, symbols)
+
+        # apply gray encoding
+        graySymbols = [ encodeGray(s) for s in symbols ]
+
+        # modulate bits
+        x = modulate(modulator, graySymbols)
 
         # generate noise term
         noi = (1/sqrt(2)).*(randn(numSymbols) + im*randn(numSymbols))
@@ -46,11 +53,16 @@ for rr = 1:numRuns
             # contaminate transmitted signals
             y = x + sqrt(N0)*noi
 
-            # demodulate
-            symbolsDemod = demodulate(modulator, y)
+            # demodulate QAM symbols
+            symbolsDemodGray = demodulate(modulator, y)
+
+            # Gray decoding
+            symbolsDemod = [ decodeGray(s) for s in symbolsDemodGray ]
+
+            # symbol -> bits
             estbits = symbolstream2bitstream(symbolsDemod, modBits)
 
-            # count error
+            # count errors
             err = sum(bits .!= estbits)
             errArray[rr, mm, ss] = err
 
