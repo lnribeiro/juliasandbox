@@ -37,7 +37,9 @@ mutable struct QAM <: DigitalModulation
     avgEs::Float32                   # symbol average energy
     avgEb::Float32                   # bit average energy
 
-    function QAM(modOrder::Int, EG=1.0, A=1.0)
+    function QAM(modOrder::Int)
+        @assert modOrder > 0 || error("Constellation order must be positive")
+        @assert modOrder % 2 == 0 || error("Constellation order must be a multiple of 2")
 
         modBits = Int(log2(modOrder))
 
@@ -74,12 +76,12 @@ end
 function demodulate(scheme::DigitalModulation, modSymbols::Vector)
     @assert !isempty(modSymbols) || error("modSymbols vector must not be empty")
 
-    demodSymbols = Vector(undef, length(modSymbols))
+    demodSymbols = Vector{Int}(undef, length(modSymbols))
     for i = 1:length(modSymbols)
         s = modSymbols[i]
         dist = map(abs, s .- scheme.constellation)
         vmin,imin = findmin(dist)
-        demodSymbols[i] = real(imin - 1);
+        demodSymbols[i] = Int(imin - 1);
     end
 
     return demodSymbols
